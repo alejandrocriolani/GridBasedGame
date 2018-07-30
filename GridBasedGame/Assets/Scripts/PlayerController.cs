@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField]
     private GameObject objectToCreate;
+    Vector3 objectSize;
 
     private MouseState mouseState;
     private RaycastHit hit;
@@ -22,111 +24,135 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButton(0))
+        switch(mouseState)
         {
-            Vector3 mousePosition = Input.mousePosition;
-            ray = Camera.main.ScreenPointToRay(mousePosition);
+            case MouseState.ERASE:
+                break;
+            case MouseState.MOVE:
+            case MouseState.NONE:
+                break;
+            case MouseState.PUT:
+                CreateElements();
+                break;
+            default:
+                break;
+        }
+    }
 
-            switch (mouseState)
+    private void CreateElements()
+    {
+        if(objectToCreate == null)
+        {
+            mouseState = MouseState.MOVE;
+            return;
+        }
+
+        Vector3 mousePosition = Input.mousePosition;
+        ray = Camera.main.ScreenPointToRay(mousePosition);
+
+        if(Physics.Raycast(ray, out hit))
+        {
+            objectToCreate.transform.position = hit.transform.position;
+            RaycastHit[] hitElements = Physics.BoxCastAll(hit.transform.position,
+                objectSize * 0.5f, Vector3.down);
+            
+            /*
+            foreach(RaycastHit elem in hitElements)
             {
-                case MouseState.PUT:
-                    bool freeSpace = true;
-                    if (objectToCreate == null)
-                        return;
-
-                    //Vector3 objectSize = objectToCreate.GetComponent<Renderer>().bounds.size;
-
-                    Vector3 objectSize = objectToCreate.GetComponent<ObjectProperties>().size;
-                    objectSize = objectSize * 0.5f;
-
-                    if (Physics.Raycast(ray, out hit))
+                GameTile gameTile = elem.transform.GetComponent<GameTile>();
+                if(gameTile != null)
+                {
+                    SpriteRenderer sprite = elem.transform.GetComponentInChildren<SpriteRenderer>();
+                    if (gameTile.Free)
                     {
-                        RaycastHit[] hitElements = Physics.BoxCastAll(hit.transform.position, objectSize, Vector3.down);
-
-                        Debug.Log(hitElements.Length);
-
-                        foreach (RaycastHit hitElem in hitElements)
-                        {
-                            Transform objectHit = hitElem.transform;
-                            SpriteRenderer sprite = objectHit.GetComponentInChildren<SpriteRenderer>();
-                            if (sprite.color == Color.gray)
-                            {
-                                Debug.Log("No Free Space");
-                                mouseState = MouseState.MOVE;
-                                freeSpace = false;
-                                break;
-                            }
-                        }
-
-                        if (freeSpace == false)
-                            break;
-
-                        foreach (RaycastHit hitElem in hitElements)
-                        {
-                            Transform objectHit = hitElem.transform;
-                            SpriteRenderer sprite = objectHit.GetComponentInChildren<SpriteRenderer>();
-                            sprite.color = Color.grey;
-                        }
-
-                        Debug.Log("Instanciate!");
-                        Debug.Log(objectToCreate.name);
-                        Vector3 objectPosition = hit.transform.position;
-                        //objectPosition.z -= objectToCreate.transform.localScale.z / 2;
-                        Instantiate(objectToCreate, objectPosition, objectToCreate.transform.rotation, hit.transform);
-                    }
-
-                    mouseState = MouseState.MOVE;
-
-                    break;
-                case MouseState.NONE:
-                case MouseState.MOVE:
-                default:
-                    if (Physics.Raycast(ray, out hit))
-                    {
-                        Debug.Log("Hay algo " + hit.transform.name);
-                        Vector3 direction = Vector3.up * 10;
-                        Debug.DrawRay(hit.transform.position, direction, Color.blue);
-                        //Transform objetHit = hit.transform;
-                        //SpriteRenderer sprite = objetHit.GetComponentInChildren<SpriteRenderer>();
-                        //sprite.color = Color.grey;
+                        sprite.color = Color.green;
                     }
                     else
                     {
-                        Debug.Log("Aca no hay nada");
-                    }  
-                    break;
+                        sprite.color = Color.red;
+                    }
+                }
             }
-        }
+            */
 
-        else if (Input.GetMouseButtonDown(1))
-        {
-            Debug.Log("Click Derecho!");
-            if (objectToCreate != null)
+            if(FreeSpace(hitElements) && Input.GetMouseButtonDown(0))
             {
-                Debug.Log("Rotate");
-                objectToCreate.transform.Rotate(Vector3.up, 90);
-                Vector3 objectSize = objectToCreate.GetComponent<ObjectProperties>().size;
-                Quaternion rotation = Quaternion.AngleAxis(90, Vector3.up);
-                objectSize = rotation * objectSize;
-
-                if (objectSize.x < 0)
-                    objectSize.x = -objectSize.x;
-                if (objectSize.y < 0)
-                    objectSize.y = -objectSize.y;
-                if (objectSize.z < 0)
-                    objectSize.z = -objectSize.z;
-
-                objectToCreate.GetComponent<ObjectProperties>().size = objectSize;
-                Debug.Log(objectSize);
+                objectToCreate.transform.position = hit.transform.position;
+                mouseState = MouseState.MOVE;
+                objectToCreate = null;
+                foreach(RaycastHit tile in hitElements)
+                {
+                    GameTile tileInfo = tile.transform.GetComponent<GameTile>();
+                    if(tileInfo != null)
+                    {
+                        tileInfo.SetBuilding(GroundType.BUILD);
+                    }
+                }
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                Destroy(objectToCreate);
+                objectToCreate = null;
+                mouseState = MouseState.MOVE;
+            }
+            else if (Input.GetKeyDown(KeyCode.E))
+            {
+                Rotate(-90);
+                Debug.Log("Rotate CounterClockwise");
+            }
+            else if(Input.GetKeyDown(KeyCode.Q))
+            {
+                Debug.Log("Rotate ClockWise");
+                Rotate(90);
             }
         }
     }
 
+    private void Rotate(float angle)
+    {
+        if (objectToCreate != null)
+        {
+            
+            objectToCreate.transform.Rotate(Vector3.up, angle);
+            Vector3 objectSize = objectToCreate.GetComponent<ObjectProperties>().size;
+            Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.up);
+            objectSize = rotation * objectSize;
+
+            objectSize.x = Mathf.Abs(objectSize.x);
+            objectSize.y = Mathf.Abs(objectSize.y);
+            objectSize.z = Mathf.Abs(objectSize.z);
+
+            objectToCreate.GetComponent<ObjectProperties>().size = objectSize;
+            Debug.Log(objectSize);
+        }
+    }
+
+    private bool FreeSpace(RaycastHit[] hitElements)
+    {
+        foreach(RaycastHit element in hitElements)
+        {
+            GameTile tileInfo = element.transform.GetComponent<GameTile>();
+            if(tileInfo != null)
+            {
+                if(!tileInfo.Free)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public void PutElement(GameObject gameObject)
     {
-        objectToCreate = gameObject;
-        mouseState = MouseState.PUT;
-        Debug.Log("Place objects");
+        if(gameObject != null)
+        {
+            objectToCreate = Instantiate(gameObject);
+            objectSize = gameObject.GetComponent<ObjectProperties>().size;
+            mouseState = MouseState.PUT;
+            Debug.Log("Place objects");
+        }
+
     }
 }
 

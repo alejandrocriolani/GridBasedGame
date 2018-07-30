@@ -374,7 +374,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 534669902}
   m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
-  m_LocalPosition: {x: 0, y: 20, z: 0}
+  m_LocalPosition: {x: 0, y: 30, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2038573734}
@@ -420,7 +420,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 788f64cf15cf03248a6dd74b1dcb81dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultTile: {fileID: 1230352225875148, guid: 65827bbb18aebe14992d376f40fd21c3,
+  defaultTile: {fileID: 1192565084250184, guid: 68d99f8791a82ec43a932de7f2ea5ed6,
     type: 2}
   grassColor: {r: 0, g: 0.81960785, b: 0, a: 1}
   width: 100
