@@ -19,6 +19,12 @@ public class GameTile : MonoBehaviour
         get { return free;  }
     }
 
+    public void FreeTile()
+    {
+        free = true;
+        groundType = GroundType.NOT_SETTED;
+    }
+
     public GroundType Type
     {
         get { return groundType;  } 
